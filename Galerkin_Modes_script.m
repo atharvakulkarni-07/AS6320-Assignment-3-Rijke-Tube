@@ -8,12 +8,15 @@ gamma = 1.4; % (g)
 c_sound = 399.6; % (c0)
 velocity_mean = 0.5; % (u0)
 Mach = velocity_mean / c_sound; % (M)
-% gain = 0.6;  % (K)
-gain = 0.01; 
+% gain = 0.05;
+% gain = 0.6;
 % gain = 1; 
+gain = 0.3;
+
+
 
 x_flame = 0.29; % (xf)
-% lag_time = 0.5; % (tau)
+% lag_time = 0.2; % (tau)
 % lag_time = 0.5;
 lag_time = 0.45 * pi;
 
@@ -23,6 +26,7 @@ eta = zeros(modes, steps); % (y1)
 eta_dot = zeros(modes, steps); % (y2)
 vel_prime = zeros(1, steps); % (u)
 pres_prime = zeros(1, steps); % (p)
+
 
 % Initial conditions
 eta(:,1) = 0; 
