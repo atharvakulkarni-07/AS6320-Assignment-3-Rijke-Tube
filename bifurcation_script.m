@@ -1,54 +1,54 @@
 % Simulation parameters
-numSteps    = 1000;     % number of timesteps
+numSteps= 1000;% number of timesteps
 % total duration of experiment
-totalTime   = 40;         % total time of experiment
-timeStep    = totalTime / numSteps; % dt
-flamePos    = 0.3;       % m (original xf)
+totalTime = 40;% total time of experiment
+timeStep= totalTime /numSteps; % dt
+flamePos= 0.3;  % m (original xf)
 
 % Physical constants
-gammaVal       = 1.4;    % g
-speedOfSound   = 399.6;  % c0
-baseVelocity   = 0.5;   % u0
-MachNum        = baseVelocity / speedOfSound; % M
-numModes       = 3;   % number of Galerkin modes (J)
+gammaVal = 1.4; % g
+speedOfSound = 399.6;  % c0
+baseVelocity= 0.5; % u0
+MachNum = baseVelocity / speedOfSound; % M
+numModes = 3; % number of Galerkin modes (J)
 
 % Parameter sweeps
-gainList       = 0.2:0.01:1.4; % non-dimensional heater power (ks)
-numGains       = length(gainList); % n1
-delayList      = 0.2:0.01:0.8; % time-lag (tau)
-numDelays      = length(delayList);% n3
+gainList = 0.2:0.01:1.4; % non-dimensional heater power (ks)
+numGains = length(gainList); % n1
+delayList = 0.2:0.01:0.8; % time-lag (tau)
+numDelays = length(delayList);% n3
 
 % Preallocate output arrays
-rmsForward     = zeros(numDelays, numGains);   % u_rms1
-dynStateA      = zeros(numDelays, numModes, numSteps);  % y1
-dynStateB      = zeros(numDelays, numModes, numSteps);  % y2
+rmsForward= zeros(numDelays,numGains); % urms1
+dynStateA= zeros(numDelays, numModes, numSteps); %y1
+dynStateB= zeros(numDelays,numModes, numSteps);  % y2
 
 % Forward integration loop
 for delayIdx = 1:numDelays
     % Initialize state for this delay
-    dynStateA(delayIdx,:,:) = 0;  % y1
-    dynStateB(delayIdx,:,:) = 0;  % y2
-    dynStateA(delayIdx,1,1) = 0.18;  % initial mode-1 excitation
+    dynStateA(delayIdx, :,: ) = 0; %y1
+    dynStateB(delayIdx,:, :) = 0;  %y2
+    dynStateA(delayIdx, 1, 1) = 0.18;% initial mode-1 excitation
 
-    velHistF = zeros(numGains, numSteps); % u1 history
+    velHistF = zeros(numGains, numSteps); %u1 history
 
     for gainIdx = 1:numGains
         % Compute initial velocity perturbation
         velHistF(gainIdx,1) = 0;
         for modeIdx = 1:numModes
             velHistF(gainIdx,1) = velHistF(gainIdx,1) + dynStateA(delayIdx,modeIdx,1) * ...
-                                   cos(modeIdx*pi*flamePos);
+                                   cos(modeIdx *pi *flamePos);
         end
 
-        lagSteps = round(delayList(delayIdx) / timeStep); % n2
+        lagSteps = round(delayList(delayIdx) /timeStep); % n2
 
         % Phase 1: t < tau (no heat feedback)
         for t = 1:lagSteps
             for modeIdx = 1:numModes
-                [k1a, l1a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t),   dynStateB(delayIdx,modeIdx,t),   modeIdx);
+                [k1a,l1a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t),   dynStateB(delayIdx,modeIdx,t),   modeIdx);
                 [k2a, l2a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t)+0.5*timeStep*k1a, dynStateB(delayIdx,modeIdx,t)+0.5*timeStep*l1a, modeIdx);
                 [k3a, l3a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t)+0.5*timeStep*k2a, dynStateB(delayIdx,modeIdx,t)+0.5*timeStep*l2a, modeIdx);
-                [k4a, l4a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t) + timeStep*k3a,       dynStateB(delayIdx,modeIdx,t)+timeStep*l3a, modeIdx);
+                [k4a ,l4a] = dynNoHeat(dynStateA(delayIdx,modeIdx,t) + timeStep*k3a,       dynStateB(delayIdx,modeIdx,t)+timeStep*l3a, modeIdx);
 
                 dynStateA(delayIdx,modeIdx,t+1) = dynStateA(delayIdx,modeIdx,t) + (timeStep/6)*(k1a + 2*k2a + 2*k3a + k4a);
                 dynStateB(delayIdx,modeIdx,t+1) = dynStateB(delayIdx,modeIdx,t) + (timeStep/6)*(l1a + 2*l2a + 2*l3a + l4a);
@@ -72,14 +72,14 @@ for delayIdx = 1:numDelays
             end
         end
 
-        % Finalize RMS for forward pass
+        
         dynStateA(delayIdx,:,1) = dynStateA(delayIdx,:,numSteps);
         dynStateB(delayIdx,:,1) = dynStateB(delayIdx,:,numSteps);
         rmsForward(delayIdx,gainIdx) = rms(velHistF(gainIdx,:));
     end
 end
 
-% Backward integration (mirror of forward)
+%backward integration (this will just look like the mirror code of the forrward one)
 rmsBackward = zeros(numDelays, numGains);
 for delayIdx = 1:numDelays
     velHistB = zeros(numGains, numSteps);
@@ -122,14 +122,14 @@ for delayIdx = 1:numDelays
             end
         end
 
-        % Finalize RMS for backward
+        
 dynStateA(delayIdx,:,1) = dynStateA(delayIdx,:,numSteps);
 dynStateB(delayIdx,:,1) = dynStateB(delayIdx,:,numSteps);
 rmsBackward(delayIdx,revIdx) = rms(velHistB(revIdx,:));
     end
 end
 
-% Plot results (standard style, using scatter plot)
+% plots
 timeVec = linspace(0, totalTime, numSteps);
 for delayIdx = 1:numDelays
     if abs(delayList(delayIdx) - 0.2) < 1e-6
@@ -162,11 +162,11 @@ annotation('textarrow', [0.2 0.25], [0.6 0.5], 'String', 'Fold Bifurcation');
 colorbar;
 
 
-% Function definitions
-function [fA,fB] = dynNoHeat(aState, bState, modeIdx)
+% functions
+function[fA,fB] = dynNoHeat(aState, bState, modeIdx)
     kVal = modeIdx*pi; omega = kVal; base = pi;
     c1 = 0.1; c2 = 0.06;
-    damp = (1/(2*pi)) * (c1*(omega/base) + c2*sqrt(base/omega));
+    damp = (1/(2*pi)) * (c1*(omega/base) + c2*sqrt(base/ omega));
     fA = bState;
     fB = -2*damp*omega*bState - kVal^2 * aState;
 end
@@ -175,7 +175,7 @@ function [fA,fB] = dynWithHeat(aState, bState, modeIdx, Kgain, delayedVel, pos)
     kVal = modeIdx*pi; omega = kVal; base = pi;
     c1 = 0.1; c2 = 0.06;
     damp = (1/(2*pi)) * (c1*(omega/base) + c2*sqrt(base/omega));
-    source = modeIdx*pi*Kgain * (abs(sqrt(1/3 + delayedVel)) - sqrt(1/3)) * sin(modeIdx*pi*pos);
+    source = modeIdx*pi*Kgain * (abs(sqrt(1/3 + delayedVel)) - sqrt(1/3)) * sin(modeIdx* pi *pos);
     fA = bState;
-    fB = -2*damp*omega*bState - kVal^2 * aState - source;
+    fB = -1 * 2*damp*omega*bState - kVal^2 * aState - source;
 end
