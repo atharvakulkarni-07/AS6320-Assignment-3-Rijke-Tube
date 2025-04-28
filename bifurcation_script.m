@@ -163,7 +163,7 @@ colorbar;
 
 
 % functions
-function[fA,fB] = dynNoHeat(aState, bState, modeIdx)
+function [fA,fB] = dynNoHeat(aState, bState, modeIdx)
     kVal = modeIdx*pi; omega = kVal; base = pi;
     c1 = 0.1; c2 = 0.06;
     damp = (1/(2*pi)) * (c1*(omega/base) + c2*sqrt(base/ omega));
